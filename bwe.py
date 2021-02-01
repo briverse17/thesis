@@ -1,12 +1,10 @@
 import os
 import json
-import inspect
-import warnings
- 
+
 import torch
 import numpy as np
-import pandas as pd
-from typing import Union, List, Tuple
+from tqdm import tqdm
+from typing import List, Dict, Union
 from transformers import AutoModel, AutoTokenizer
 
 __MODELS__ = [
@@ -17,193 +15,123 @@ __MODELS__ = [
 
 __LAYERS__ = list(range(1, 13))
 
-__STRATEGIES__ = ['average', 'concat', 'sum']
+__STRATEGIES__ = ['mean', 'concat', 'sum']
 
-class Data:
-    def __init__(self,
-                 input="test/input",
-                 output="test/output",
-                 input_batches=[],
-                 tokenized_batches=[
-                    {
-                        "input_ids": None,
-                        "attention_mask": None
-                    }
-                 ],
-                 embedded_batches=[],
-                 load=False):
+class Data():
+    def __init__(
+        self,
+        input="test/input",
+        output="test/output"
+    ):
         self.input = input
         self.output = output
-        self.input_batches = input_batches
-        self.tokenized_batches = tokenized_batches
-        self.embedded_batches = embedded_batches
-        if load:
-            self.load()
-
-    def from_config(self, config_path, load=False):
-        with open(config_path) as f:
-            config = json.load(f)["data"]
-            self.input = config["input"]
-            self.output = config["output"]
-            if load:
-                self.load()
-        return self
-
+        self.raw_batches = []
+        self.tokenized_batches = []
+        self.embedded_batches = []
+    
     def load(self):
-        return self.__load()
-    
-    def dump(self):
-        return self.__dump()
-    
-    def __load(self):
+        self.file_names = []
+        inp_paths = []
         if os.path.isfile(self.input):
-            try:
-                with open(self.input, "r", encoding="utf-8") as f:
-                    self.input_batches.append(f.read().split("\n"))
-            except:
-                raise Exception(f"Cannot open {self.input}")
-        else: # os.path.isdir(self.input) == True
-            dirs = os.listdir(self.input)
-            for d in dirs:
-                try:
-                    with open(os.path.join(self.input, d), "r", encoding="utf-8") as f:
-                        self.input_batches.append(f.read().split("\n"))
-                except:
-                    raise Exception(f"Cannot open {os.path.join(self.input, d)}")
-        self.tokenized_batches = len(self.input_batches) * self.tokenized_batches
-
-    def __dump(self):
-        pass
-
-class Tools:
-    def __init__(self,
-                 model_path="vinai/phobert-base",
-                 tokenizer_path="vinai/phobert-base",
-                 max_length=512,
-                 padding="max_length",
-                 truncation=True,
-                 return_tensors="pt",
-                 load=False):
-        self.model_path = model_path
-        if tokenizer_path != None:
-            self.tokenizer_path = tokenizer_path
+            self.file_names.append(os.path.basename(self.input))
+            inp_paths.append(self.input)
         else:
-            self.tokenizer_path = self.model_path
-        self.max_length = max_length
-        self.padding = padding
-        self.truncation = truncation
-        self.return_tensors = return_tensors
-        print(self.model_path, self.tokenizer_path)
-        self.validate()
-        if load:
-            self.load()
-    
-    def validate(self):
-        if self.model_path not in __MODELS__:
-            raise Exception(f"Expecting model in {__MODELS__}, got {self.model_path}")
-        if self.tokenizer_path not in __MODELS__:
-            raise Exception(f"Expecting tokenizer in {__MODELS__}, got {self.tokenizer_path}")
-    
-    def load(self):
-        return self.__load()
-    
-    def __load(self):
-        print(self.model_path, self.tokenizer_path)
-        self.model = AutoModel.from_pretrained(self.model_path, output_hidden_states=True)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_path, use_fast=True)
-
-class Params:
-    def __init__(self,
-                 layers=(12,),
-                 layers_ascending=False,
-                 strategy="average"):
-        self.layers = layers
-        self.layers_ascending = layers_ascending
-        self.strategy = strategy
-        self.validate()
-        self.sort_layers()
-
-    def validate(self):
-        def validate_layers(layers, layers_ascending):
-            if not set(layers).issubset(__LAYERS__):
-                raise Exception(f"Expecting layers in range {__LAYERS__}, got {layers}")
-            if len(layers) > 4:
-                warnings.warn("You are getting embeddings of more than 4 layers,\
-                                which can be huge.")
-            if layers_ascending == False:
-                warnings.warn("'layers_ascending' == False means the script won't re-arrange the layers.")
-                
-        def validate_strategy(strategy):
-            if strategy not in __STRATEGIES__:
-                raise Exception(f"Expecting strategies in {__STRATEGIES__}, got {strategy}")
+            self.file_names = os.listdir(self.input)
+            inp_paths = [os.path.join(self.input, fn) for fn in self.file_names]
         
-        validate_layers(self.layers, self.layers_ascending)
-        validate_strategy(self.strategy)
-                                
-    def sort_layers(self):
-        return self.__sort_layers()
+        for inp in tqdm(inp_paths):
+            with open(inp, "r", encoding="utf-8") as f:
+                self.raw_batches.append(f.read().split("\n"))
         
-    def __sort_layers(self):
-        if self.layers_ascending and self.layers != "all":
-            self.layers = sorted(self.layers)
-            
-class Embedder:
-    def __init__(self, load_tools=False):
-        self.tools = Tools(load=load_tools)
-        self.params = Params()
-    
-    def from_config(self, config_path="config.json", load_tools=False):
-        with open(config_path) as f:
-            config = json.load(f)["embedder"]
-            self.tools = Tools(config["tools"]["model_path"],
-                               config["tools"]["tokenizer_path"],
-                               config["tools"]["max_length"],
-                               config["tools"]["padding"],
-                               config["tools"]["truncation"],
-                               config["tools"]["return_tensors"],
-                               load=load_tools)
-            
-            if len(config["params"]["layers"]) != set(config["params"]["layers"]):
-                warnings.warn("Your 'layers' contains duplicated layers. They will be removed.")
-                config["params"]["layers"] = list(dict.fromkeys(config["params"]["layers"]).keys())
-            
-            self.params = Params(config["params"]["layers"],
-                                 config["params"]["layers_ascending"],
-                                 config["params"]["strategy"])
         return self
 
-    def tokenize_batches(self, data):
-        return self.__tokenize_batches(data)
+    def dump(self):
+        if not os.path.isdir(self.output):
+            os.mkdir(self.output)
+
+        for i, batch in tqdm(enumerate(self.embedded_batches)):
+            if type(batch) != np.array:
+                batch = batch.cpu().detach().numpy()
+            npy_file = os.path.splitext(self.file_names[i])[0] + ".npy"
+            out = os.path.join(self.output, npy_file)
+            np.save(out, batch, allow_pickle=True)
+
+class Embedder():
+    def __init__(self, params_file : str = None):
+        if params_file != None:
+            self.read_params(params_file)
+        else:
+            self.model = AutoModel.from_pretrained("vinai/phobert-base", output_hidden_states=True)
+            self.toker = AutoTokenizer.from_pretrained("vinai/phobert-base")
+            self.toker_kwargs = {
+                "max_length": None,
+                "padding": "max_length",
+                "truncation": True,
+                "return_tensors": "pt"      
+            }
+            self.data = Data()
+            
+            self.layers = [12]
+            self.strategy = "mean"
+            self.dump = True
     
-    def __tokenize_batches(self, data):
-        for i, batch in enumerate(data.input_batches):
-            tokenizer_output = self.tools.tokenizer(batch,
-                                              max_length=self.tools.max_length,
-                                              padding=self.tools.padding,
-                                              truncation=self.tools.truncation,
-                                              return_tensors=self.tools.return_tensors)
-            data.tokenized_batches[i]["input_ids"] = tokenizer_output["input_ids"]
-            data.tokenized_batches[i]["attention_mask"] = tokenizer_output["attention_mask"]
-
-    def bert_embed(self, data) -> torch.Tensor:
-        def combine_layers(embeddings: torch.Tensor,
-                           strategy: str = "average"):
-            combined_embeddings = torch.Tensor()    
-            if strategy == "average":
-                combined_embeddings = torch.mean(hidden_states, dim=0)
-            elif strategy == "concat":
-                combined_embeddings = torch.cat(tuple(hidden_states), dim=2)
-            else: # strategy == "sum"
-                combined_embeddings = torch.sum(hidden_states, dim=0)
-
-            return combined_embeddings
+    def read_params(self, params_file):
+        params = {}
+        with open(params_file, "r") as pf:
+            params = json.load(pf)
         
-        with torch.no_grad():
-            for i, batch in enumerate(data.tokenized_batches):
-                # initially, batch_hidden_states is a tuple of torch.Tensor tensors
-                batch_hidden_states = self.tools.model(batch["input_ids"],
-                                                       batch["attention_mask"])[-1][1:]
+        self.model = AutoModel.from_pretrained(params["model"]["path"], output_hidden_states=True)
+        if params["toker"]["path"]:
+            self.toker = AutoTokenizer.from_pretrained(params["toker"]["path"])
+        else:
+            self.toker = AutoTokenizer.from_pretrained(params["model"]["path"])
+        self.toker_kwargs = {
+            "max_length": params["toker"]["max_length"],
+            "padding": params["toker"]["padding"],
+            "truncation": params["toker"]["truncation"],
+            "return_tensors": params["toker"]["return_tensors"]
+        }
+        self.data = Data(
+            params["data"]["input"],
+            params["data"]["output"],
+        )
 
+        self.layers = list(dict.fromkeys(params["embedder"]["layers"]))
+        if (params["embedder"]["layers_asc"]):
+            self.layers = sorted(self.layers)
+        self.strategy = params["embedder"]["strategy"]
+        self.dump = params["embedder"]["dump"]
+
+    def tokenize(self):
+        for batch in tqdm(self.data.raw_batches):
+            toker_output = self.toker(batch, **self.toker_kwargs)
+            temp_dict = {
+                "input_ids": toker_output["input_ids"],
+                "attention_mask": toker_output["attention_mask"]
+            }
+            self.data.tokenized_batches.append(temp_dict)
+
+        return self.data
+
+    @staticmethod
+    def combine_layers(embeddings: torch.Tensor, strategy: str = "mean"):
+        combined_embeddings = torch.Tensor()    
+        if strategy == "mean":
+            combined_embeddings = torch.mean(embeddings, dim=0)
+        elif strategy == "concat":
+            combined_embeddings = torch.cat(tuple(embeddings), dim=2)
+        else: # strategy == "sum"
+            combined_embeddings = torch.sum(embeddings, dim=0)
+
+        return combined_embeddings
+
+    def embed(self):
+        with torch.no_grad():
+            for batch in tqdm(self.data.tokenized_batches):
+                batch_hidden_states = self.model(
+                    batch["input_ids"],
+                    batch["attention_mask"]
+                )[-1][1:]
                 # here we stack them together to make one big tensor and call it "batch_embeddings"
                 # batch_embeddings dimensions:
                 # 0: BERT hidden layers (12)
@@ -212,21 +140,35 @@ class Embedder:
                 # 3: hidden_sizes (base: 768, large: 1024)
                 batch_embeddings = torch.stack(batch_hidden_states, dim=0)
                 batch_combined_embeddings = torch.Tensor()
-                if  self.params.layers == ["all"]:
-                    # all layer embedding
-                    batch_combined_embeddings = combine_layers_embeddings(batch_embeddings,
-                                                                          self.params.strategy)
-                elif len(self.params.layers) == 1:
+
+                if len(self.layers) == 1:
                     # single layer embedding
                     # just return the embedding at that layer
-                    # cuz we need not to do any combination strategy
-                    batch_combined_embeddings = embeddings[self.params.layers[-1]]
+                    # cuz we needn't do any combination
+                    batch_combined_embeddings = batch_embeddings[self.layers[-1]]
                 else:
                     # multi layer embedding
                     # first, we filter out the layers
-                    multi_layer_embeddings = torch.stack([embeddings[i] for i in self.params.layers])
+                    multi_layer_embeddings = torch.stack([batch_embeddings[i] for i in self.layers])
                     # do combining
-                    batch_combined_embeddings = combine_layers_embeddings(multi_layer_embeddings,
-                                                                          self.params.strategy)
+                    batch_combined_embeddings = self.combine_layers(multi_layer_embeddings, self.strategy)
             
-                data.embedded_batches[i].append(batch_combined_embeddings)
+                self.data.embedded_batches.append(batch_combined_embeddings)
+
+        if self.dump:
+            self.data.dump()
+            print(f"Embedded vectors are dumped to {self.data.output}")
+
+        return self.data
+
+    def run(self):
+        if self.data.raw_batches == []:
+            print("Loading data...")
+            self.data = self.data.load()
+
+        if self.data.tokenized_batches == []:
+            print("Tokenizing...")
+            self.data = self.tokenize()
+
+        print("Embedding...")
+        self.data = self.embed()
