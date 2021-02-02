@@ -32,7 +32,7 @@ List of distinct integers from 0 to 11
 - `model`: a PyTorch model loaded by `HuggingFace Transformers`, default to `vinai/phobert-base`
 - `toker`: default to `vinai.phobert-base` and must be a `fast` tokenizer. Be careful if you use a tokenizer that is not associated with the model.
 - `toker_kwargs`: `dict`, default to `{"max_length": None, "padding": "max_length", "truncation": True, "return_tensors": "pt"}`
-- `data`: an instance of [`Data`](#-class-data)
+- `data`: an instance of [`Data`](#class-data)
 - `layers`: `list`, list of layers to get embeddings of, default to `[11]`
 - `strategy`: `str`, strategy to combine layers' embeddings, default to `mean`
 - `dump`: `bool`, save embeddings to `.npy` files or not, default to `True`
