@@ -35,6 +35,8 @@ def isnotebook():
 
 tqdm = tqdm_notebook if isnotebook() else tqdm_terminal
 
+dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class Data():
     def __init__(
         self,
@@ -80,7 +82,7 @@ class Embedder():
         if params_file != None:
             self.read_params(params_file)
         else:
-            self.model = AutoModel.from_pretrained("vinai/phobert-base", output_hidden_states=True)
+            self.model = AutoModel.from_pretrained("vinai/phobert-base", output_hidden_states=True).to(dev)
             self.toker = AutoTokenizer.from_pretrained("vinai/phobert-base")
             self.toker_kwargs = {
                 "max_length": None,
@@ -99,7 +101,7 @@ class Embedder():
         with open(params_file, "r") as pf:
             params = json.load(pf)
         
-        self.model = AutoModel.from_pretrained(params["model"]["path"], output_hidden_states=True)
+        self.model = AutoModel.from_pretrained(params["model"]["path"], output_hidden_states=True).to(dev)
         if params["toker"]["path"]:
             self.toker = AutoTokenizer.from_pretrained(params["toker"]["path"])
         else:
@@ -147,8 +149,8 @@ class Embedder():
         with torch.no_grad():
             for batch in tqdm(self.data.tokenized_batches):
                 batch_hidden_states = self.model(
-                    batch["input_ids"],
-                    batch["attention_mask"]
+                    batch["input_ids"].to(dev),
+                    batch["attention_mask"].to(dev)
                 )["hidden_states"]
                 # here we stack them together to make one big tensor and call it "batch_embeddings"
                 # batch_embeddings dimensions:
