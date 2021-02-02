@@ -1,9 +1,18 @@
 import argparse
 from bwe import Embedder
 
+def run(embedder):
+    if embedder.data.raw_batches == []:
+        embedder.data = embedder.data.load()
+
+    if embedder.data.tokenized_batches == []:
+        embedder.data = embedder.tokenize()
+
+    embedder.data = embedder.bert_embed()
+
 def main(params_file):
     embedder = Embedder(params_file)
-    embedder.run()
+    run(embedder)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

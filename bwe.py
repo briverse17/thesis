@@ -13,7 +13,7 @@ __MODELS__ = [
     'bert-base-multilingual-cased', 'bert-base-multilingual-uncased'
 ]
 
-__LAYERS__ = list(range(1, 13))
+__LAYERS__ = list(range(1, 12))
 
 __STRATEGIES__ = ['mean', 'concat', 'sum']
 
@@ -39,6 +39,7 @@ class Data():
             self.file_names = os.listdir(self.input)
             inp_paths = [os.path.join(self.input, fn) for fn in self.file_names]
         
+        print("Loading data...")
         for inp in tqdm(inp_paths):
             with open(inp, "r", encoding="utf-8") as f:
                 self.raw_batches.append(f.read().split("\n"))
@@ -71,7 +72,7 @@ class Embedder():
             }
             self.data = Data()
             
-            self.layers = [12]
+            self.layers = [11]
             self.strategy = "mean"
             self.dump = True
     
@@ -85,12 +86,7 @@ class Embedder():
             self.toker = AutoTokenizer.from_pretrained(params["toker"]["path"])
         else:
             self.toker = AutoTokenizer.from_pretrained(params["model"]["path"])
-        self.toker_kwargs = {
-            "max_length": params["toker"]["max_length"],
-            "padding": params["toker"]["padding"],
-            "truncation": params["toker"]["truncation"],
-            "return_tensors": params["toker"]["return_tensors"]
-        }
+        self.toker_kwargs = params["tokers"]["kwargs"]
         self.data = Data(
             params["data"]["input"],
             params["data"]["output"],
@@ -103,6 +99,7 @@ class Embedder():
         self.dump = params["embedder"]["dump"]
 
     def tokenize(self):
+        print("Tokenizing...")
         for batch in tqdm(self.data.raw_batches):
             toker_output = self.toker(batch, **self.toker_kwargs)
             temp_dict = {
@@ -125,7 +122,8 @@ class Embedder():
 
         return combined_embeddings
 
-    def embed(self):
+    def bert_embed(self):
+        print("Embedding...")
         with torch.no_grad():
             for batch in tqdm(self.data.tokenized_batches):
                 batch_hidden_states = self.model(
@@ -160,15 +158,3 @@ class Embedder():
             print(f"Embedded vectors are dumped to {self.data.output}")
 
         return self.data
-
-    def run(self):
-        if self.data.raw_batches == []:
-            print("Loading data...")
-            self.data = self.data.load()
-
-        if self.data.tokenized_batches == []:
-            print("Tokenizing...")
-            self.data = self.tokenize()
-
-        print("Embedding...")
-        self.data = self.embed()
