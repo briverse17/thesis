@@ -3,7 +3,8 @@ import json
 
 import torch
 import numpy as np
-from tqdm import tqdm
+from tqdm import tqdm as tqdm_terminal
+from tqdm.notebook import tqdm as tqdm_notebook
 from typing import List, Dict, Union
 from transformers import AutoModel, AutoTokenizer
 
@@ -16,6 +17,23 @@ __MODELS__ = [
 __LAYERS__ = list(range(1, 12))
 
 __STRATEGIES__ = ['mean', 'concat', 'sum']
+
+def isnotebook():
+    """
+        https://stackoverflow.com/a/39662359
+    """
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
+
+tqdm = tqdm_notebook if isnotebook() else tqdm_terminal
 
 class Data():
     def __init__(
@@ -50,9 +68,9 @@ class Data():
         if not os.path.isdir(self.output):
             os.mkdir(self.output)
 
+        print("Dumping embedded vectors...")
         for i, batch in tqdm(enumerate(self.embedded_batches)):
-            if type(batch) != np.array:
-                batch = batch.cpu().detach().numpy()
+            batch = batch.cpu().detach().numpy()
             npy_file = os.path.splitext(self.file_names[i])[0] + ".npy"
             out = os.path.join(self.output, npy_file)
             np.save(out, batch, allow_pickle=True)
@@ -87,6 +105,8 @@ class Embedder():
         else:
             self.toker = AutoTokenizer.from_pretrained(params["model"]["path"])
         self.toker_kwargs = params["toker"]["kwargs"]
+        #tokenizer returns torch.Tensor(s)
+        self.toker_kwargs["return_tensors"] = "pt"
         self.data = Data(
             params["data"]["input"],
             params["data"]["output"],
@@ -129,7 +149,7 @@ class Embedder():
                 batch_hidden_states = self.model(
                     batch["input_ids"],
                     batch["attention_mask"]
-                )[-1][1:]
+                )["hidden_states"]
                 # here we stack them together to make one big tensor and call it "batch_embeddings"
                 # batch_embeddings dimensions:
                 # 0: BERT hidden layers (12)

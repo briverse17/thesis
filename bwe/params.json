@@ -10,8 +10,7 @@
                 {
                     "max_length": null,
                     "padding": "max_length",
-                    "truncation": true,
-                    "return_tensors": "pt"
+                    "truncation": true
                 }
         },
     "data":
