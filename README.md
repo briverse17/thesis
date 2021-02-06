@@ -7,17 +7,17 @@ I. TASK TOKEN CLASSIFICATION:
         - Another stuffs was package into ./transformers/examples/_tests_requirements.txt .
     - Guide:
         - Download code: 
-                !git clone https://github.com/huggingface/transformers.git -b v4.1.1
+                -- !git clone https://github.com/huggingface/transformers.git -b v4.1.1
         - Install the environment:
-                !pip install transformers==4.1.1
-                !pip install -r ./transformers/examples/_tests_requirements.txt
-                !pip install pyarrow==0.17.1
+                -- !pip install transformers==4.1.1
+                -- !pip install -r ./transformers/examples/_tests_requirements.txt
+                -- !pip install pyarrow==0.17.1
         - Use our code to be able to run with the ner dataset (because the format of dataset is .txt when transform to .csv have a host of issue from special characters and            quota):
-                !rm -f  ./transformers/examples/token-classification/run_ner.py
-                %cp run_ner.py ./transformers/examples/token-classification/
+                -- !rm -f  ./transformers/examples/token-classification/run_ner.py
+                -- %cp run_ner.py ./transformers/examples/token-classification/
         - Adjust the parameters conform with finetune model Pho-BERT:
-                %cd ./transformers/examples/token-classification
-                !python run_ner.py --model_name_or_path $MODEL \
+                -- %cd ./transformers/examples/token-classification
+                -- !python run_ner.py --model_name_or_path $MODEL \
                 --output_dir $OUTPUT_DIR \
                 --overwrite_output_dir \
                 --learning_rate 1e-5 \
