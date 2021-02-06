@@ -16,8 +16,8 @@ I. TASK TOKEN CLASSIFICATION:
             - !rm -f  ./transformers/examples/token-classification/run_ner.py
             - %cp run_ner.py ./transformers/examples/token-classification/
         - Adjust the parameters conform with finetune model Pho-BERT:
-                -- %cd ./transformers/examples/token-classification
-                -- !python run_ner.py --model_name_or_path $MODEL \
+          - %cd ./transformers/examples/token-classification
+          - !python run_ner.py --model_name_or_path $MODEL \
                 --output_dir $OUTPUT_DIR \
                 --overwrite_output_dir \
                 --learning_rate 1e-5 \
@@ -37,7 +37,7 @@ I. TASK TOKEN CLASSIFICATION:
                 --greater_is_better True
    - Result
         - briverse/vi-electra-small-cased :
-            eval_loss = 0.07347527146339417
+          - eval_loss = 0.07347527146339417
             eval_accuracy_score = 0.9813233724653149
             eval_precision = 0.8174927113702624
             eval_recall = 0.797724039829303
