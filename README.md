@@ -38,9 +38,9 @@ I. TASK TOKEN CLASSIFICATION:
    - Result
         - briverse/vi-electra-small-cased :
           - eval_loss = 0.07347527146339417
-            eval_accuracy_score = 0.9813233724653149
-            eval_precision = 0.8174927113702624
-            eval_recall = 0.797724039829303
-            eval_f1 = 0.8074874010079193
+          - eval_accuracy_score = 0.9813233724653149
+          - eval_precision = 0.8174927113702624
+          - eval_recall = 0.797724039829303
+          - eval_f1 = 0.8074874010079193
         -  briverse/vi-electra-base-cased :
                 
