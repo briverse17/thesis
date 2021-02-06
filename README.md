@@ -1,11 +1,11 @@
 I. TASK TOKEN CLASSIFICATION:
   - Code finetune Electra this task are base on https://github.com/huggingface/transformers/tree/master/examples/token-classification .
   - We use gpu which has been supported by colaboratory
-    1 - Requirements:
+    - Requirements:
         - We use https://github.com/huggingface/transformers version 4.1.1.
         - pyarrow version 0.17.1 .
         - Another stuffs was package into ./transformers/examples/_tests_requirements.txt .
-    2 - Guide:
+    - Guide:
         - Download code: 
                 !git clone https://github.com/huggingface/transformers.git -b v4.1.1
         - Install the environment:
@@ -35,7 +35,7 @@ I. TASK TOKEN CLASSIFICATION:
                 --label_all_tokens \
                 --evaluation_strategy epoch \
                 --greater_is_better True
-  3 - Result
+   - Result
         - briverse/vi-electra-small-cased :
                 eval_loss = 0.07347527146339417
                 eval_accuracy_score = 0.9813233724653149
