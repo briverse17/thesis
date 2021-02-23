@@ -35,12 +35,29 @@ I. TASK TOKEN CLASSIFICATION:
                 --label_all_tokens \
                 --evaluation_strategy epoch \
                 --greater_is_better True
-   - Result
-        - briverse/vi-electra-small-cased :
-          - eval_loss = 0.07347527146339417
-          - eval_accuracy_score = 0.9813233724653149
-          - eval_precision = 0.8174927113702624
-          - eval_recall = 0.797724039829303
-          - eval_f1 = 0.8074874010079193
-        -  briverse/vi-electra-base-cased :
-                
+   - Result NER:
+        - briverse/vi-electra-small-cased (70 epochs) :
+          - eval_loss = 0.09036912769079208
+          - eval_accuracy_score = 0.9860826675127635
+          - eval_precision = 0.8607888631090487
+          - eval_recall = 0.8443812233285918
+          - eval_f1 = 0.8525061036909378
+        -  briverse/vi-electra-base-cased (70 -> 30) :
+          - eval_loss = 0.05991247296333313
+          - eval_accuracy_score = 0.9920373182903016
+          - eval_precision = 0.9252205292702486
+          - eval_recall = 0.9281979082864039
+          - eval_f1 = 0.926706827309237     
+    - Result POS:
+        - briverse/vi-electra-small-cased (30 epochs) :
+          - eval_loss = 0.20316332578659058
+          - eval_accuracy_score = 0.9454457447111415
+          - eval_precision = 0.9561021282725342
+          - eval_recall = 0.9645075743815164
+          - eval_f1 = 0.9602864583333334
+        - briverse/vi-electra-base-cased (30 epochs) :
+          - eval_loss = 0.3072599172592163
+          - eval_accuracy_score = 0.9522934996156146
+          - eval_precision = 0.9601954303779279
+          - eval_recall = 0.9709739528462964
+          - eval_f1 = 0.9655546122861839
