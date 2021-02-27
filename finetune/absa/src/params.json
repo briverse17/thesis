@@ -1,0 +1,23 @@
+{
+    "domain": "hotel",
+    "output_dir": "./output",
+    "model": "briverse/vi-electra-small-cased",
+    "tokenizer": null,
+    "max_length": 256,
+    "do_train": true,
+    "do_eval": true,
+    "do_predict": false,
+    "dropout": 0.02,
+    "batch_size": 8,
+    "epochs": 30,
+    "eval_epochs": 3,
+    "from_best": true,
+    "lr": 2e-5,
+    "non_letter_to_keep": {
+        "brackets": null,
+        "maths": null,
+        "punc": null,
+        "quotes": null,
+        "misc": null
+    }
+}
